@@ -30,6 +30,14 @@ from mudp import (
     send_position,
     send_environment_metrics,
     send_power_metrics,
+    send_health_metrics,
+    # Admin functions for remote device management
+    send_reboot,
+    send_shutdown,
+    send_factory_reset,
+    send_remove_node,
+    send_set_time,
+    send_get_device_metadata,
 )
 
 MCAST_GRP = "224.0.0.69"
@@ -61,8 +69,32 @@ Optional Arguments for all message types:
 
 Example:
 ```python
-send_text_message("Happy New Year" to=12345678, hop_limit=5)
+send_text_message("Happy New Year", to=12345678, hop_limit=5)
 ```
+
+## Admin Functions
+
+MUDP now supports admin messages for remote device management:
+
+```python
+# Device control
+send_reboot(seconds=10, to=12345678)           # Reboot device in 10 seconds
+send_shutdown(seconds=30, to=12345678)         # Shutdown device in 30 seconds
+send_factory_reset(full_device=False, to=12345678)  # Reset config only
+send_factory_reset(full_device=True, to=12345678)   # Full device reset
+
+# Node management
+send_remove_node(node_id=87654321, to=12345678)     # Remove node from NodeDB
+send_set_favorite_node(node_id=87654321, to=12345678)  # Set node as favorite
+send_reset_nodedb(to=12345678)                      # Clear entire NodeDB
+
+# Configuration
+send_set_time(to=12345678)                          # Set current time
+send_set_fixed_position(37.7749, -122.4194, to=12345678)  # Set fixed GPS position
+send_get_device_metadata(to=12345678)               # Request device info
+```
+
+**Note**: Admin functions require the target device to have admin access enabled and may require authentication depending on device configuration.
 
 Supported keyword arguments for nodeinfo:
 

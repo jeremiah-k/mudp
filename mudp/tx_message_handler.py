@@ -2,7 +2,7 @@ import random
 import time
 from typing import Callable
 
-from meshtastic import portnums_pb2, mesh_pb2, telemetry_pb2, BROADCAST_NUM
+from meshtastic import portnums_pb2, mesh_pb2, telemetry_pb2, admin_pb2, BROADCAST_NUM
 from mudp.encryption import generate_hash, encrypt_packet
 from mudp.singleton import conn, node
 
@@ -220,3 +220,145 @@ def send_health_metrics(**kwargs) -> None:
         return create_payload(data, portnum, **kwargs)
 
     publish_message(create_health_metrics_payload, portnums_pb2.TELEMETRY_APP, **kwargs)
+
+
+# Admin Message Functions
+
+def send_admin_message(admin_message: admin_pb2.AdminMessage, **kwargs) -> None:
+    """Send an admin message to control remote devices."""
+
+    def create_admin_payload(portnum: int, **_):
+        return create_payload(admin_message, portnum, **kwargs)
+
+    publish_message(create_admin_payload, portnums_pb2.ADMIN_APP, **kwargs)
+
+
+def send_reboot(seconds: int = 10, **kwargs) -> None:
+    """Tell the destination node to reboot after specified seconds."""
+    admin_msg = admin_pb2.AdminMessage()
+    admin_msg.reboot_seconds = seconds
+    send_admin_message(admin_msg, **kwargs)
+
+
+def send_shutdown(seconds: int = 10, **kwargs) -> None:
+    """Tell the destination node to shutdown after specified seconds."""
+    admin_msg = admin_pb2.AdminMessage()
+    admin_msg.shutdown_seconds = seconds
+    send_admin_message(admin_msg, **kwargs)
+
+
+def send_factory_reset(full_device: bool = False, **kwargs) -> None:
+    """Tell the destination node to factory reset.
+
+    Args:
+        full_device: If True, performs full device reset (clears BLE bonds & PKI keys).
+                    If False, only resets config (preserves BLE bonds & PKI keys).
+    """
+    admin_msg = admin_pb2.AdminMessage()
+    if full_device:
+        admin_msg.factory_reset_device = True
+    else:
+        admin_msg.factory_reset_config = True
+    send_admin_message(admin_msg, **kwargs)
+
+
+def send_reboot_ota(seconds: int = 10, **kwargs) -> None:
+    """Tell the destination node to reboot into factory firmware (ESP32)."""
+    admin_msg = admin_pb2.AdminMessage()
+    admin_msg.reboot_ota_seconds = seconds
+    send_admin_message(admin_msg, **kwargs)
+
+
+def send_enter_dfu_mode(**kwargs) -> None:
+    """Tell the destination node to enter DFU mode (NRF52)."""
+    admin_msg = admin_pb2.AdminMessage()
+    admin_msg.enter_dfu_mode_request = True
+    send_admin_message(admin_msg, **kwargs)
+
+
+def send_remove_node(node_id: int, **kwargs) -> None:
+    """Tell the destination node to remove a specific node from its NodeDB."""
+    admin_msg = admin_pb2.AdminMessage()
+    admin_msg.remove_by_nodenum = node_id
+    send_admin_message(admin_msg, **kwargs)
+
+
+def send_set_favorite_node(node_id: int, **kwargs) -> None:
+    """Tell the destination node to set the specified node as favorite."""
+    admin_msg = admin_pb2.AdminMessage()
+    admin_msg.set_favorite_node = node_id
+    send_admin_message(admin_msg, **kwargs)
+
+
+def send_remove_favorite_node(node_id: int, **kwargs) -> None:
+    """Tell the destination node to remove the specified node from favorites."""
+    admin_msg = admin_pb2.AdminMessage()
+    admin_msg.remove_favorite_node = node_id
+    send_admin_message(admin_msg, **kwargs)
+
+
+def send_set_ignored_node(node_id: int, **kwargs) -> None:
+    """Tell the destination node to ignore the specified node."""
+    admin_msg = admin_pb2.AdminMessage()
+    admin_msg.set_ignored_node = node_id
+    send_admin_message(admin_msg, **kwargs)
+
+
+def send_remove_ignored_node(node_id: int, **kwargs) -> None:
+    """Tell the destination node to stop ignoring the specified node."""
+    admin_msg = admin_pb2.AdminMessage()
+    admin_msg.remove_ignored_node = node_id
+    send_admin_message(admin_msg, **kwargs)
+
+
+def send_reset_nodedb(**kwargs) -> None:
+    """Tell the destination node to clear its list of nodes."""
+    admin_msg = admin_pb2.AdminMessage()
+    admin_msg.nodedb_reset = True
+    send_admin_message(admin_msg, **kwargs)
+
+
+def send_set_time(timestamp: int = None, **kwargs) -> None:
+    """Tell the destination node to set its time.
+
+    Args:
+        timestamp: Unix timestamp. If None or 0, uses current system time.
+    """
+    if timestamp is None or timestamp == 0:
+        timestamp = int(time.time())
+
+    admin_msg = admin_pb2.AdminMessage()
+    admin_msg.set_time_only = timestamp
+    send_admin_message(admin_msg, **kwargs)
+
+
+def send_get_device_metadata(**kwargs) -> None:
+    """Request device metadata from the destination node."""
+    admin_msg = admin_pb2.AdminMessage()
+    admin_msg.get_device_metadata_request = True
+    send_admin_message(admin_msg, **kwargs)
+
+
+def send_set_fixed_position(latitude: float, longitude: float, altitude: int = 0, **kwargs) -> None:
+    """Tell the destination node to set a fixed position.
+
+    Args:
+        latitude: Latitude in degrees
+        longitude: Longitude in degrees
+        altitude: Altitude in meters
+    """
+    position = mesh_pb2.Position()
+    position.latitude_i = int(latitude * 1e7)
+    position.longitude_i = int(longitude * 1e7)
+    position.altitude = altitude
+
+    admin_msg = admin_pb2.AdminMessage()
+    admin_msg.set_fixed_position.CopyFrom(position)
+    send_admin_message(admin_msg, **kwargs)
+
+
+def send_remove_fixed_position(**kwargs) -> None:
+    """Tell the destination node to remove its fixed position."""
+    admin_msg = admin_pb2.AdminMessage()
+    admin_msg.remove_fixed_position = True
+    send_admin_message(admin_msg, **kwargs)
