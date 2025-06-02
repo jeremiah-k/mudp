@@ -2,8 +2,18 @@
 
 This library provides UDP-based broadcasting of Meshtastic-compatible packets.
 
+## Features
+
+- **Message Broadcasting**: Send text messages, node info, position, and telemetry data
+- **Admin Functions**: Remote device management including reboot, shutdown, factory reset
+- **Node Management**: Control node databases, favorites, and ignored nodes
+- **Configuration**: Set device time, fixed positions, and request metadata
+- **UDP Multicast**: Efficient network communication using standard Meshtastic protocols
+
 ## Development Status
-- Working on admin message implementation
+- ✅ Admin message implementation completed
+- ✅ Remote device management functionality added
+- ✅ Comprehensive admin functions available
 
 # Installation
 
